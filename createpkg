@@ -1,0 +1,62 @@
+#!/bin/sh
+#=====================================| VARIAVEIS GLOBAIS
+export pkgext='tpkg' # Extensão do pacote
+
+#=====================================| FUNÇÕES
+CHECK_PKG() {
+   pkg_name="$@"
+
+   # Verificando o extensão do pacote. Precisa ser tpkg.
+   if ! echo "$pkg_name" | grep "\b${pkgext}\b$"; then
+      printf '%s\n' "O formato do pacote deve ser: ${pkgext}"
+      return 1
+   fi
+
+   # Verificando se tem espaços no nome do pacote.
+   if echo "$pkg_name" | grep -qE "[[:space:]]+"; then
+      printf '%s\n' "Não utilize ESPAÇOS no nome do pacote."
+      printf '%s\n' "Abortando a criação do pacote."
+      return 1
+   fi
+
+   # Verificando quantos traços existem.
+   # O traço (-) é um delitimitador, precisa ter 2.
+   # formato: nomedopacote-versão-build.tpkg
+   verify=$(echo "${pkg_name}" | grep -o "-" | wc -l)
+   if [ "$verify" -lt '2' ] || [ "$verify" -gt '2' ]; then
+      printf '%s\n' "Erro... O formato do pacote deve ser o seguinte:"
+      printf '%s\n' "NomeDoPacote-Versão-Build.${pkgext}"
+      return 1
+   fi
+
+   return 0
+}
+
+# Criação do pacote.
+CREATE_PKG() {
+   pkg_name="$1" # Recebendo nome do pacote.
+
+   if tar -cf ../${pkg_name} .; then
+      printf '%s\n' "O pacote foi criado em ../${pkg_name}"
+      return 0
+   else
+      printf '%s\n' "O pacote ${pkg_name} não foi criado..."
+      exit 1
+   fi
+
+   return 0
+}
+
+#=====================================| INICIO
+case "$1" in
+   create|-c)
+      shift # Rebaixando para pegar nome do pacote.
+      # Sem nome do pacote? Então sai...
+      if [ -z "$1" ]; then
+         printf '%s\n' "Você precisa fornecer um nome de pacote."
+         exit 1
+      fi
+      CHECK_PKG "$@" || exit 1 # Checagem do pacote.
+      CREATE_PKG "$@" # Chamando função para criar o pacote.
+   ;;
+esac
