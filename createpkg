@@ -1,6 +1,12 @@
 #!/bin/sh
 #=====================================| VARIAVEIS GLOBAIS
+export version='1.0'
 export pkgext='tpkg' # Extensão do pacote
+
+# DESABILITANDO SUPORTE A UNICODE
+# PARA MELHOR PERFORMANCE.
+export LC_ALL=C
+export LANG=C
 
 #=====================================| FUNÇÕES
 CHECK_PKG() {
@@ -36,27 +42,82 @@ CHECK_PKG() {
 CREATE_PKG() {
    pkg_name="$1" # Recebendo nome do pacote.
 
-   if tar -cf ../${pkg_name} .; then
-      printf '%s\n' "O pacote foi criado em ../${pkg_name}"
-      return 0
+   if [ "$VERBOSE" = '1' ]; then
+      if tar -cvf ../${pkg_name} .; then
+         printf '%s\n' "O pacote foi criado em ../${pkg_name}"
+      else
+         printf '%s\n' "O pacote ${pkg_name} não foi criado..."
+         exit 1
+      fi
    else
-      printf '%s\n' "O pacote ${pkg_name} não foi criado..."
-      exit 1
+      if tar -cf ../${pkg_name} .; then
+         printf '%s\n' "O pacote foi criado em ../${pkg_name}"
+         return 0
+      else
+         printf '%s\n' "O pacote ${pkg_name} não foi criado..."
+         exit 1
+      fi
    fi
-
-   return 0
 }
 
+USAGE() {
+   cat <<EOF
+createpkg - OPÇÕES
+
+   create, -c
+      Cria um pacote .tpkg. Precisa estar dentro do diretório
+      principal do pacote para ser gerado. O mesmo será criado
+      um diretório acima.
+
+   verbose, -v
+
+AUTOR  : Jefferson 'Slackjeff' Carneiro
+CONTATO: jeffersoncarneiro@slackjeff.com.br
+EOF
+}
+
+#====================================| TESTE
+
+# Se nulo, vai para o help.
+if [ -z "$1" ]; then
+   USAGE
+fi
+
+# PARSER
+while [ -n "$1" ]; do
+   case "$1" in
+      create|-c)
+         CMD=$1
+         shift
+      ;;
+
+      verbose|-v)
+         VERBOSE=1 # 0 OFF / 1 ON
+         shift
+      ;;
+
+      *.tpkg)
+         PKG=$1
+         shift
+      ;;
+
+      *)
+         USAGE
+         exit 1
+      ;;
+   esac
+done
+
+
 #=====================================| INICIO
-case "$1" in
+case "$CMD" in
    create|-c)
-      shift # Rebaixando para pegar nome do pacote.
       # Sem nome do pacote? Então sai...
-      if [ -z "$1" ]; then
+      if [ -z "$CMD" ]; then
          printf '%s\n' "Você precisa fornecer um nome de pacote."
          exit 1
       fi
-      CHECK_PKG "$@" || exit 1 # Checagem do pacote.
-      CREATE_PKG "$@" # Chamando função para criar o pacote.
+      CHECK_PKG "$PKG" || exit 1 # Checagem do pacote.
+      CREATE_PKG "$PKG" # Chamando função para criar o pacote.
    ;;
 esac
