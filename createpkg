@@ -1,6 +1,16 @@
 #!/bin/sh
+#===============================HEADER=============================|
+#Autor
+# Jefferson Slackjeff Rocha <jeffersoncarneiro@slakcjeff.com.br>
+#
+#Cria pacotes tpkg.
+#CHANGELOG
+# (Versão 1.1)
+# - Diretório desc contendo informações do pacote
+#==================================================================|
+
 #=====================================| VARIAVEIS GLOBAIS
-export version='1.0'
+export version='1.1'
 export pkgext='tpkg' # Extensão do pacote
 
 # DESABILITANDO SUPORTE A UNICODE
@@ -76,6 +86,28 @@ CONTATO: jeffersoncarneiro@slackjeff.com.br
 EOF
 }
 
+GENERATE_PKGDESC()
+{
+    # Criando diretório se não existir.
+    if [ ! -d "desc" ]; then
+        mkdir -v desc
+    fi
+    # Criando descrição do pacote
+    cat <<EOF>desc/pkgdesc
+# Mantenedor do pacote
+mantainer=''
+
+# Nome do pacote
+package=''
+
+# Descrição Curta
+desc=''
+
+# Site do software
+url=''
+EOF
+}
+
 #====================================| TESTE
 
 # Se nulo, vai para o help.
@@ -87,8 +119,13 @@ fi
 while [ -n "$1" ]; do
    case "$1" in
       create|-c)
-         CMD=$1
+         CMD="$1"
          shift
+      ;;
+
+      pkgdesc)
+        CMD="pkgdesc"
+        shift
       ;;
 
       verbose|-v)
@@ -119,5 +156,8 @@ case "$CMD" in
       fi
       CHECK_PKG "$PKG" || exit 1 # Checagem do pacote.
       CREATE_PKG "$PKG" # Chamando função para criar o pacote.
+   ;;
+   pkgdesc)
+        GENERATE_PKGDESC
    ;;
 esac

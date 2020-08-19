@@ -1,0 +1,91 @@
+#!/bin/sh
+#==============================HEADER===============================|
+#AUTOR
+# Jefferson 'Slackjeff' Rocha
+#
+#Versão
+# 1.1
+#
+#DESCRIÇÃO
+# pkginstall - Instala pacote gerado com o createpkg.
+#              E gerar um arquivo de track/rastreador.
+# Changelog
+#   (Versão 1.1)
+#   - Adicionado suporte a instalação de multiplos pacotes.
+#   - Suporte a informações do pacote.
+#===================================================================|
+
+#========================== CONFIGURAÇÃO
+TRACK='/var/log/installed' # Rastreador do pacote.
+
+#========================== TESTE
+# Criando diretório do rastreador.
+[ ! -d "$TRACK" ] && mkdir -v "$TRACK"
+
+#========================== FUNÇÕES
+INSTALL() # Instalar pacote.
+{
+  local package="$1" # Nome do pacote...
+  name_package=$(basename $package) # Somente nome do pacote.
+  name_package="${name_package//.tpkg/}" # Cortando extensão
+
+  # Informação para o usuário.
+  echo "========> Iniciando instalação do pacote: $package"
+
+  # Descompactando na raiz do sistema.
+  if tar xvf "$package" -C / >> "${TRACK}/${name_package}.track"; then
+    echo "Pacote $name_package Instalado com SUCESSO!"
+  else
+    echo "Pacote $name_package NÃO FOI INSTALADO."
+    exit 1
+  fi
+
+  # LIMPEZA 1
+  # Removendo ./ e linhas em branco
+  if sed -i 's,\.\/,,g; /^$/d; /^desc\/$/d; /^desc\/pkgdesc$/d' "${TRACK}/${name_package}.track"; then
+    echo "Limpeza executada..."
+  else
+    echo "Erro na limpeza..."
+    exit 1
+  fi
+}
+
+# Descrição do pacote.
+DESC()
+{
+    local pkg="$@"
+    local dirtemp=$(mktemp -d)
+
+    # Verificando se o arquivo pkgdesc existe!
+    if tar -tf "$pkg" "./desc/pkgdesc" 1> /dev/null 2>/dev/null; then
+        if tar -xf "$pkg" -C "${dirtemp}" "./desc/pkgdesc" 2>/dev/null; then
+            . "${dirtemp}/desc/pkgdesc" # Carregando informações.
+            echo '======================DESCRIÇÃO====================='
+            echo "Mantenedor: $mantainer"
+            echo "Pacote    : $package"
+            echo "Descrição : $desc"
+            echo '====================================================='
+            echo
+        fi
+    fi
+    # Removendo arquivo temporário.
+    [ -e "$dirtemp" ] && { rm -r "${dirtemp}" ;}
+}
+
+#========================== INICIO
+case $1 in
+  install)
+      shift # Rebaixando parametro.
+      while [ -n "$1" ]; do
+        if [ -e "$1" ]; then
+            DESC  "$1"   # Chamando função
+            INSTALL "$1" # Chamando função
+            shift
+            continue
+        else
+            echo "Pacote $1 não existe."
+            exit 1
+        fi
+      done
+  ;;
+esac
